@@ -17,13 +17,16 @@ SyntaxNode *create_syn_node(char *name, int lineno, ENUM_NODE_TYPE node_type, in
     new_node->lineno = lineno;
     new_node->child_cnt = child_cnt;
     new_node->node_type = node_type;
+    new_node->next = NULL; // 兄弟默认为空，自底向上构建时由其父亲设置
 
-    // 保存各子节点
+    // 保存各子节点、以及他们的兄弟关系
     va_list args;
     va_start(args, child_cnt);
     for (size_t i = 0; i < child_cnt; i++)
     {
         new_node->children[i] = va_arg(args, SyntaxNode *);
+        if (i > 0) // 如果不是第一个儿子，则它有哥哥，设置哥哥的弟弟为自己
+            new_node->children[i - 1]->next = new_node->children[i];
     }
     va_end(args);
 
@@ -98,4 +101,24 @@ void preorder_traversal(FILE *stream, SyntaxNode *root, int deep)
         SyntaxNode *child = root->children[i];
         preorder_traversal(stream, child, deep + 1);
     }
+}
+
+SyntaxNode *get_syn_child(SyntaxNode *node, int num)
+{
+    if (num >= 0 && num < node->child_cnt)
+        return node->children[num];
+    else
+        return NULL;
+}
+
+SyntaxNode *get_syn_brother(SyntaxNode *node, int num)
+{
+    if (num < 0)
+        return NULL;
+
+    SyntaxNode *curr = node;
+    for (int i = 0; i < num && curr != NULL; i++)
+        curr = curr->next;
+
+    return curr;
 }

@@ -33,7 +33,8 @@ typedef struct syntax_node
         char strval[32]; // 假设token长度不超过32
     };
 
-    struct syntax_node *children[0]; // 每个指针指向一个孩子
+    struct syntax_node *next;        // 下一个兄弟指针，语义分析时用
+    struct syntax_node *children[0]; // 儿子指针数组，每个指针指向一个孩子
 } SyntaxNode;
 
 /**
@@ -61,5 +62,23 @@ void free_syn_tree(SyntaxNode *root);
  * @param deep 传入0
  */
 void preorder_traversal(FILE *stream, SyntaxNode *root, int deep);
+
+/**
+ * 获取语法树节点的指定儿子节点
+ *
+ * @param node 当前节点
+ * @param num 第几个儿子
+ * @return 若存在返回相应指针，若不存在返回NULL
+ */
+SyntaxNode *get_syn_child(SyntaxNode *node, int num);
+
+/**
+ * 获取语法树节点的指定兄弟节点
+ *
+ * @param node 当前节点
+ * @param num 第几个弟弟。从1开始，即表示偏移量
+ * @return 若存在返回相应指针，若不存在返回NULL
+ */
+SyntaxNode *get_syn_brother(SyntaxNode *node, int num);
 
 #endif

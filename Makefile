@@ -22,7 +22,9 @@ parser:
 	$(call echo_info,"Generating lexical analyzer...")
 	$(FLEX) -o C--lexical.yy.c C--lexical.l
 	$(call echo_info,"GCC compiling...")
-	$(CC) $(FLEX_CFLAGS) -o C--parser main.c C--syntax.tab.c syntax_tree.c
+	$(CC) $(FLEX_CFLAGS) \
+		-o C--parser \
+		main.c C--syntax.tab.c syntax_tree.c sema.c
 	$(call echo_success,"Done.")
 
 parser-debug:
@@ -34,7 +36,7 @@ parser-debug:
 	$(CC) $(FLEX_CFLAGS) -D DEBUG -D YYDEBUG=1 \
 		-g \
 		-o C--parser-debug \
-		main.c C--syntax.tab.c syntax_tree.c
+		main.c C--syntax.tab.c syntax_tree.c sema.c
 	$(call echo_success,"Done.")
 
 .PHONY: examples test clean

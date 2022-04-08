@@ -1,4 +1,5 @@
 #include "syntax_tree.h"
+#include "sema.h"
 #include "C--syntax.tab.h"
 
 extern SyntaxNode *root;
@@ -34,10 +35,16 @@ int main(int argc, char **argv)
 #endif
     yyparse();
 
-#ifndef DEBUG
-    if (!lex_error_cnt && !syn_error_cnt)
+#ifdef DEBUG
+    preorder_traversal(stdout, root, 0);
 #endif
-        preorder_traversal(stdout, root, 0);
+
+    if (!lex_error_cnt && !syn_error_cnt)
+    {
+        table = initTable();
+        traverseTree(root);
+        deleteTable(table);
+    }
 
     free_syn_tree(root);
     return 0;

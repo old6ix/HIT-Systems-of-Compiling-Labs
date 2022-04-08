@@ -31,10 +31,16 @@ void test_create_syn_node(CuTest *tc)
 
     CuAssertIntEquals(tc, ENUM_INT, grandson->node_type);
 
-    CuAssertPtrEquals(tc, son1, father->children[0]);
-    CuAssertPtrEquals(tc, son2, father->children[1]);
-    CuAssertPtrEquals(tc, son3, father->children[2]);
-    CuAssertPtrEquals(tc, grandson, father->children[0]->children[0]);
+    CuAssertPtrEquals(tc, son1, get_syn_child(father, 0));
+    CuAssertPtrEquals(tc, son2, get_syn_child(father, 1));
+    CuAssertPtrEquals(tc, son3, get_syn_child(father, 2));
+    CuAssertPtrEquals(tc, grandson, get_syn_child(get_syn_child(father, 0), 0));
+
+    CuAssertPtrEquals(tc, son2, get_syn_brother(son1, 1));
+    CuAssertPtrEquals(tc, son3, get_syn_brother(son1, 2));
+    CuAssertPtrEquals(tc, NULL, get_syn_brother(son3, 1));
+    CuAssertPtrEquals(tc, NULL, get_syn_brother(father, 1));
+    CuAssertPtrEquals(tc, NULL, get_syn_brother(grandson, 1));
 
     free(father);
     free(son1);
