@@ -52,16 +52,16 @@ typedef enum error_type
 
 // 指针简写
 typedef struct syntax_node *pNode;
-typedef struct symbol_type *pType;
-typedef struct fieldList *pFieldList;
+typedef struct symbol_schema *pSchema;
+typedef struct field_list *pFieldList;
 typedef struct tableItem *pItem;
 typedef struct hashTable *pHash;
 typedef struct stack *pStack;
 typedef struct table *pTable;
 
-typedef struct symbol_type
+typedef struct symbol_schema
 {
-    SymbolKind kind; // 符号类型
+    SymbolKind kind; // 符号类别
     union            // 符号数据
     {
         // 基本类型
@@ -70,8 +70,8 @@ typedef struct symbol_type
         // 数组
         struct
         {
-            pType elem; // 元素类型
-            int size;   // 数组大小
+            pSchema elem; // 元素类型
+            int size;     // 数组大小
         } array;
 
         // 结构体
@@ -84,18 +84,18 @@ typedef struct symbol_type
         // 函数
         struct
         {
-            int argc;         // 参数个数
-            pFieldList argv;  // 各参数
-            pType returnType; // 返回值类型
+            int argc;           // 参数个数
+            pFieldList argv;    // 各参数
+            pSchema returnType; // 返回值类型
         } function;
     } data;
-} SymbolType;
+} SymbolSchema;
 
-typedef struct fieldList
+typedef struct field_list
 {
     char *name;      // 名字
-    pType type;      // 类型
-    pFieldList tail; // 下一个域
+    pSchema schema;  // 类型信息
+    pFieldList next; // 下一个域
 } FieldList;
 
 typedef struct tableItem
@@ -127,11 +127,11 @@ typedef struct table
 extern pTable table;
 
 // Type functions
-pType newType(SymbolKind kind, ...);
-pType copyType(pType src);
-void deleteType(pType type);
-bool checkType(pType type1, pType type2);
-void printType(pType type);
+pSchema newType(SymbolKind kind, ...);
+pSchema copyType(pSchema src);
+void deleteType(pSchema type);
+bool checkType(pSchema type1, pSchema type2);
+void printType(pSchema type);
 
 // FieldList functions
 
@@ -143,7 +143,7 @@ void printType(pType type);
 //     return p;
 // }
 
-pFieldList newFieldList(char *newName, pType newType);
+pFieldList newFieldList(char *newName, pSchema newType);
 pFieldList copyFieldList(pFieldList src);
 void deleteFieldList(pFieldList fieldList);
 void setFieldListName(pFieldList p, char *newName);
@@ -213,21 +213,21 @@ void traverseTree(pNode node);
 
 // Generate symbol table functions
 void ExtDef(pNode node);
-void ExtDecList(pNode node, pType specifier);
-pType Specifier(pNode node);
-pType StructSpecifier(pNode node);
-pItem VarDec(pNode node, pType specifier);
-void FunDec(pNode node, pType returnType);
+void ExtDecList(pNode node, pSchema specifier);
+pSchema Specifier(pNode node);
+pSchema StructSpecifier(pNode node);
+pItem VarDec(pNode node, pSchema specifier);
+void FunDec(pNode node, pSchema returnType);
 void VarList(pNode node, pItem func);
 pFieldList ParamDec(pNode node);
-void CompSt(pNode node, pType returnType);
-void StmtList(pNode node, pType returnType);
-void Stmt(pNode node, pType returnType);
+void CompSt(pNode node, pSchema returnType);
+void StmtList(pNode node, pSchema returnType);
+void Stmt(pNode node, pSchema returnType);
 void DefList(pNode node, pItem structInfo);
 void Def(pNode node, pItem structInfo);
-void DecList(pNode node, pType specifier, pItem structInfo);
-void Dec(pNode node, pType specifier, pItem structInfo);
-pType Exp(pNode node);
+void DecList(pNode node, pSchema specifier, pItem structInfo);
+void Dec(pNode node, pSchema specifier, pItem structInfo);
+pSchema Exp(pNode node);
 void Args(pNode node, pItem funcInfo);
 
 #endif
