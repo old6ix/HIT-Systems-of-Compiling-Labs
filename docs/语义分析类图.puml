@@ -1,0 +1,120 @@
+@startuml 语义分析相关类的类图
+left to right direction
+hide empty members
+
+enum SymbolKind {
+    BASIC
+    ARRAY
+    STRUCTURE
+    FUNCTION
+}
+
+enum BasicType {
+    INT_TYPE
+    FLOAT_TYPE
+}
+
+interface LinkedList {
+    +getNext(): LinkedList
+}
+
+class SymbolSchema {
+    -kind: SymbolKind
+    -data: union
+    --
+    +new(), copy(), delete()
+    +set(), get()
+    +operator==()
+}
+note left of SymbolSchema
+    存储单个符号的相关信息
+    如函数名、数组类型等
+end note
+
+class FieldList {
+    -name: char[]
+    -schema: SymbolSchema*
+    -next: FieldList*
+    --
+    +new(), copy(), delete()
+    +set(), get()
+}
+note top of FieldList
+    域
+    用于支持结构体嵌套
+end note
+
+class TableItem {
+    -depth: int
+    -field: FieldList*
+    -nextSymbol: TableItem*
+    -nextHash: TableItem*
+    --
+    +new(), delete()
+    +isStructDef(): bool
+}
+note bottom of TableItem
+    本质是
+    十字链表项
+end note
+
+class HashTable
+{
+    -hashArray: TableItem*
+    --
+    +newHash()
+    +deleteHash()
+    +getHashHead()
+    +setHashHead()
+}
+
+class Stack {
+    -stackArray: TableItem*
+    -curStackDepth: int
+    --
+    +new(), delete()
+    +addDepth()
+    +pop()
+    +getTopHead()
+    +setTopHead()
+}
+
+class SymbolTable << Singleton >> {
+    -hash: HashTable
+    -stack: Stack
+    -unnamedStructCnt: int
+    +init()
+    +delete()
+    +searchTableItem()
+    +checkConflict()
+    +addItem()
+    +deleteItem()
+    +clearCurrDepth()
+}
+note as NoteST1
+    每当遇到一个未命名结构体，该字段+1。
+    用于为匿名结构体分配符号名，统一结构。
+end note
+
+NoteST1 . SymbolTable::unnamedStructCnt
+
+LinkedList <|- FieldList
+LinkedList <|- TableItem
+
+SymbolSchema --> SymbolKind
+SymbolSchema --> BasicType
+
+FieldList -o SymbolSchema
+FieldList -> SymbolSchema
+
+TableItem "1" --> "1" FieldList
+
+HashTable *-- TableItem
+
+Stack *-- TableItem
+
+SymbolTable --> HashTable
+SymbolTable --> Stack
+SymbolTable ..> TableItem
+
+@enduml
