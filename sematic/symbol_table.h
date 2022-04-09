@@ -10,7 +10,7 @@ typedef struct symbol_table
 {
     pHash hash;
     pStack stack;
-    int unNamedStructNum;
+    int unnamedStructCnt;
 } SymbolTable;
 
 pTable initTable();

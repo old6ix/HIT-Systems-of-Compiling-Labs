@@ -13,7 +13,7 @@ pTable initTable()
     assert(table != NULL);
     table->hash = newHash();
     table->stack = newStack();
-    table->unNamedStructNum = 0;
+    table->unnamedStructCnt = 0;
     return table;
 };
 

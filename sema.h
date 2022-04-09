@@ -10,10 +10,13 @@
 
 extern pTable table;
 
-
+/**
+ * 遍历语法分析树，生成并检查符号表
+ *
+ * @param node 语法树根节点
+ */
 void traverseTree(SyntaxNode *node);
 
-// Generate symbol table functions
 void ExtDef(SyntaxNode *node);
 void ExtDecList(SyntaxNode *node, pSchema specifier);
 pSchema Specifier(SyntaxNode *node);
