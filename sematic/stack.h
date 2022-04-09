@@ -14,7 +14,7 @@ typedef struct stack
 pStack newStack();
 void deleteStack(pStack stack);
 void addStackDepth(pStack stack);
-void minusStackDepth(pStack stack);
+void popStack(pStack stack);
 pItem getCurDepthStackHead(pStack stack);
 void setCurDepthStackHead(pStack stack, pItem newVal);
 

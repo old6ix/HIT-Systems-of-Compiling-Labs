@@ -108,29 +108,5 @@ void clearCurDepthStackList(pTable table)
         deleteTableItem(table, tDelete);
     }
     setCurDepthStackHead(stack, NULL);
-    minusStackDepth(stack);
-}
-
-void printTable(pTable table)
-{
-    printf("----------------hash_table----------------\n");
-    for (int i = 0; i < HASH_TABLE_SIZE; i++)
-    {
-        pItem item = getHashHead(table->hash, i);
-        if (item)
-        {
-            printf("[%d]", i);
-            while (item)
-            {
-                printf(" -> name: %s depth: %d\n", item->field->name,
-                       item->depth);
-                printf("========FiledList========\n");
-                printFieldList(item->field);
-                printf("===========End===========\n");
-                item = item->nextHash;
-            }
-            printf("\n");
-        }
-    }
-    printf("-------------------end--------------------\n");
+    popStack(stack);
 }

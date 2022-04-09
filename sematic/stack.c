@@ -33,7 +33,7 @@ void addStackDepth(pStack stack)
     stack->curStackDepth++;
 }
 
-void minusStackDepth(pStack stack)
+void popStack(pStack stack)
 {
     assert(stack != NULL);
     stack->curStackDepth--;

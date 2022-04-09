@@ -15,6 +15,14 @@ typedef struct symbol_table
 
 pTable initTable();
 void deleteTable(pTable table);
+
+/**
+ * 在符号表上查找符号
+ *
+ * @param table 符号表
+ * @param name 符号名
+ * @return 成功则返回对应表项的指针，否则返回NULL
+ */
 pItem searchTableItem(pTable table, char *name);
 
 /**
@@ -29,13 +37,5 @@ bool checkTableItemConflict(pTable table, pItem item);
 void addTableItem(pTable table, pItem item);
 void deleteTableItem(pTable table, pItem item);
 void clearCurDepthStackList(pTable table);
-
-
-/**
- * 在stdout输出符号表，Debug用
- *
- * @param table 符号表
- */
-void printTable(pTable table);
 
 #endif

@@ -290,7 +290,7 @@ void VarList(SyntaxNode *node, pItem func)
 
     func->field->schema->data.function.argc = argc;
 
-    minusStackDepth(table->stack);
+    popStack(table->stack);
 }
 
 pFieldList ParamDec(SyntaxNode *node)
@@ -835,7 +835,6 @@ pSchema Exp(SyntaxNode *node)
         }
         else
         {
-            // good
             return copyType(tp->field->schema);
         }
     }
