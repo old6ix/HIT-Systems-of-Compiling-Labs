@@ -8,85 +8,93 @@
 #include "syntax_tree.h"
 
 // 符号类型
-typedef enum _kind
+typedef enum symbol_kind
 {
     BASIC,
     ARRAY,
     STRUCTURE,
     FUNCTION
-} Kind;
+} SymbolKind;
 
-// 基本类型
-typedef enum _basicType
+/**
+ * 基本类型
+ */
+typedef enum basic_type
 {
     INT_TYPE,
     FLOAT_TYPE
 } BasicType;
 
-// 语义分析错误类型
-typedef enum _errorType
+/**
+ * 语义分析错误类型
+ * 对应书P39的17个错误类型
+ */
+typedef enum error_type
 {
-    UNDEF_VAR = 1,        // Undefined Variable
-    UNDEF_FUNC,           // Undefined Function
-    REDEF_VAR,            // Redefined Variable
-    REDEF_FUNC,           // Redefined Function
-    TYPE_MISMATCH_ASSIGN, // Type mismatched for assignment.
-    LEFT_VAR_ASSIGN,      // The left-hand side of an assignment must be a variable.
-    TYPE_MISMATCH_OP,     // Type mismatched for operands.
-    TYPE_MISMATCH_RETURN, // Type mismatched for return.
-    FUNC_AGRC_MISMATCH,   // Function is not applicable for arguments
-    NOT_A_ARRAY,          // Variable is not a Array
-    NOT_A_FUNC,           // Variable is not a Function
-    NOT_A_INT,            // Variable is not a Integer
-    ILLEGAL_USE_DOT,      // Illegal use of "."
-    NONEXISTFIELD,        // Non-existentfield
-    REDEF_FEILD,          // Redefined field
-    DUPLICATED_NAME,      // Duplicated name
-    UNDEF_STRUCT          // Undefined structure
+    UNDEF_VAR = 1,        // 变量未定义即使用
+    UNDEF_FUNC,           // 函数未定义即使用
+    REDEF_VAR,            // 变量重复定义
+    REDEF_FUNC,           // 函数重复定义
+    TYPE_MISMATCH_ASSIGN, // 赋值号两边类型不匹配
+    LEFT_VAR_ASSIGN,      // 赋值号左边无法赋值
+    TYPE_MISMATCH_OP,     // 操作数不匹配
+    TYPE_MISMATCH_RETURN, // 返回值类型不对
+    FUNC_AGRC_MISMATCH,   // 函数参数有误
+    NOT_A_ARRAY,          // 变量非数组
+    NOT_A_FUNC,           // 变量非函数
+    NOT_A_INT,            // 变量非int
+    ILLEGAL_USE_DOT,      // 变量非数组（非法使用取域运算符）
+    NONEXISTFIELD,        // struct域不存在
+    REDEF_FEILD,          // 域重复定义
+    DUPLICATED_NAME,      // 结构体名重复定义（先前值也可能为变量or函数）
+    UNDEF_STRUCT          // 结构体未定义即使用
 } ErrorType;
 
 // 指针简写
 typedef struct syntax_node *pNode;
-typedef struct type *pType;
+typedef struct symbol_type *pType;
 typedef struct fieldList *pFieldList;
 typedef struct tableItem *pItem;
 typedef struct hashTable *pHash;
 typedef struct stack *pStack;
 typedef struct table *pTable;
 
-typedef struct type
+typedef struct symbol_type
 {
-    Kind kind;
-    union
+    SymbolKind kind; // 符号类型
+    union            // 符号数据
     {
         // 基本类型
         BasicType basic;
-        // 数组类型信息包括元素类型与数组大小构成
+
+        // 数组
         struct
         {
-            pType elem;
-            int size;
+            pType elem; // 元素类型
+            int size;   // 数组大小
         } array;
-        // 结构体类型信息是一个链表
+
+        // 结构体
         struct
         {
             char *structName;
             pFieldList field;
         } structure;
 
+        // 函数
         struct
         {
-            int argc;         // argument counter
-            pFieldList argv;  // argument vector
-            pType returnType; // returnType
+            int argc;         // 参数个数
+            pFieldList argv;  // 各参数
+            pType returnType; // 返回值类型
         } function;
-    } u;
-} Type;
+    } data;
+} SymbolType;
 
 typedef struct fieldList
 {
-    char *name;      // 域的名字
-    pType type;      // 域的类型
+    char *name;      // 名字
+    pType type;      // 类型
     pFieldList tail; // 下一个域
 } FieldList;
 
@@ -119,7 +127,7 @@ typedef struct table
 extern pTable table;
 
 // Type functions
-pType newType(Kind kind, ...);
+pType newType(SymbolKind kind, ...);
 pType copyType(pType src);
 void deleteType(pType type);
 bool checkType(pType type1, pType type2);

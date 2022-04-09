@@ -20,9 +20,9 @@ static inline char *newString(char *src)
 }
 
 // Type functions
-pType newType(Kind kind, ...)
+pType newType(SymbolKind kind, ...)
 {
-    pType p = (pType)malloc(sizeof(Type));
+    pType p = (pType)malloc(sizeof(SymbolType));
     assert(p != NULL);
     p->kind = kind;
     va_list vaList;
@@ -31,23 +31,23 @@ pType newType(Kind kind, ...)
     {
     case BASIC:
         va_start(vaList, 1);
-        p->u.basic = va_arg(vaList, BasicType);
+        p->data.basic = va_arg(vaList, BasicType);
         break;
     case ARRAY:
         va_start(vaList, 2);
-        p->u.array.elem = va_arg(vaList, pType);
-        p->u.array.size = va_arg(vaList, int);
+        p->data.array.elem = va_arg(vaList, pType);
+        p->data.array.size = va_arg(vaList, int);
         break;
     case STRUCTURE:
         va_start(vaList, 2);
-        p->u.structure.structName = va_arg(vaList, char *);
-        p->u.structure.field = va_arg(vaList, pFieldList);
+        p->data.structure.structName = va_arg(vaList, char *);
+        p->data.structure.field = va_arg(vaList, pFieldList);
         break;
     case FUNCTION:
         va_start(vaList, 3);
-        p->u.function.argc = va_arg(vaList, int);
-        p->u.function.argv = va_arg(vaList, pFieldList);
-        p->u.function.returnType = va_arg(vaList, pType);
+        p->data.function.argc = va_arg(vaList, int);
+        p->data.function.argv = va_arg(vaList, pFieldList);
+        p->data.function.returnType = va_arg(vaList, pType);
         break;
     }
     va_end(vaList);
@@ -58,27 +58,27 @@ pType copyType(pType src)
 {
     if (src == NULL)
         return NULL;
-    pType p = (pType)malloc(sizeof(Type));
+    pType p = (pType)malloc(sizeof(SymbolType));
     assert(p != NULL);
     p->kind = src->kind;
     assert(p->kind == BASIC || p->kind == ARRAY || p->kind == STRUCTURE || p->kind == FUNCTION);
     switch (p->kind)
     {
     case BASIC:
-        p->u.basic = src->u.basic;
+        p->data.basic = src->data.basic;
         break;
     case ARRAY:
-        p->u.array.elem = copyType(src->u.array.elem);
-        p->u.array.size = src->u.array.size;
+        p->data.array.elem = copyType(src->data.array.elem);
+        p->data.array.size = src->data.array.size;
         break;
     case STRUCTURE:
-        p->u.structure.structName = newString(src->u.structure.structName);
-        p->u.structure.field = copyFieldList(src->u.structure.field);
+        p->data.structure.structName = newString(src->data.structure.structName);
+        p->data.structure.field = copyFieldList(src->data.structure.field);
         break;
     case FUNCTION:
-        p->u.function.argc = src->u.function.argc;
-        p->u.function.argv = copyFieldList(src->u.function.argv);
-        p->u.function.returnType = copyType(src->u.function.returnType);
+        p->data.function.argc = src->data.function.argc;
+        p->data.function.argv = copyFieldList(src->data.function.argv);
+        p->data.function.returnType = copyType(src->data.function.returnType);
         break;
     }
 
@@ -97,34 +97,34 @@ void deleteType(pType type)
     case BASIC:
         break;
     case ARRAY:
-        deleteType(type->u.array.elem);
-        type->u.array.elem = NULL;
+        deleteType(type->data.array.elem);
+        type->data.array.elem = NULL;
         break;
     case STRUCTURE:
-        if (type->u.structure.structName)
-            free(type->u.structure.structName);
-        type->u.structure.structName = NULL;
+        if (type->data.structure.structName)
+            free(type->data.structure.structName);
+        type->data.structure.structName = NULL;
 
-        temp = type->u.structure.field;
+        temp = type->data.structure.field;
         while (temp)
         {
             pFieldList tDelete = temp;
             temp = temp->tail;
             deleteFieldList(tDelete);
         }
-        type->u.structure.field = NULL;
+        type->data.structure.field = NULL;
         break;
     case FUNCTION:
-        deleteType(type->u.function.returnType);
-        type->u.function.returnType = NULL;
-        temp = type->u.function.argv;
+        deleteType(type->data.function.returnType);
+        type->data.function.returnType = NULL;
+        temp = type->data.function.argv;
         while (temp)
         {
             pFieldList tDelete = temp;
             temp = temp->tail;
             deleteFieldList(tDelete);
         }
-        type->u.function.argv = NULL;
+        type->data.function.argv = NULL;
         break;
     }
     free(type);
@@ -145,12 +145,12 @@ bool checkType(pType type1, pType type2)
         switch (type1->kind)
         {
         case BASIC:
-            return type1->u.basic == type2->u.basic;
+            return type1->data.basic == type2->data.basic;
         case ARRAY:
-            return checkType(type1->u.array.elem, type2->u.array.elem);
+            return checkType(type1->data.array.elem, type2->data.array.elem);
         case STRUCTURE:
-            return !strcmp(type1->u.structure.structName,
-                           type2->u.structure.structName);
+            return !strcmp(type1->data.structure.structName,
+                           type2->data.structure.structName);
         }
     }
 }
@@ -167,27 +167,27 @@ void printType(pType type)
         switch (type->kind)
         {
         case BASIC:
-            printf("type basic: %d\n", type->u.basic);
+            printf("type basic: %d\n", type->data.basic);
             break;
         case ARRAY:
-            printf("array size: %d\n", type->u.array.size);
-            printType(type->u.array.elem);
+            printf("array size: %d\n", type->data.array.size);
+            printType(type->data.array.elem);
             break;
         case STRUCTURE:
-            if (!type->u.structure.structName)
+            if (!type->data.structure.structName)
                 printf("struct name is NULL\n");
             else
             {
-                printf("struct name is %s\n", type->u.structure.structName);
+                printf("struct name is %s\n", type->data.structure.structName);
             }
-            printFieldList(type->u.structure.field);
+            printFieldList(type->data.structure.field);
             break;
         case FUNCTION:
-            printf("function argc is %d\n", type->u.function.argc);
+            printf("function argc is %d\n", type->data.function.argc);
             printf("function args:\n");
-            printFieldList(type->u.function.argv);
+            printFieldList(type->data.function.argv);
             printf("function return type:\n");
-            printType(type->u.function.returnType);
+            printType(type->data.function.returnType);
             break;
         }
     }
@@ -434,7 +434,7 @@ bool isStructDef(pItem src)
         return 0;
     if (src->field->type->kind != STRUCTURE)
         return 0;
-    if (src->field->type->u.structure.structName)
+    if (src->field->type->data.structure.structName)
         return 0;
     return 1;
 }
@@ -691,7 +691,7 @@ pType StructSpecifier(pNode node)
         {
             returnType = newType(
                 STRUCTURE, newString(structItem->field->name),
-                copyFieldList(structItem->field->type->u.structure.field));
+                copyFieldList(structItem->field->type->data.structure.field));
 
             // printf("\nnew Type:\n");
             // printType(returnType);
@@ -726,7 +726,7 @@ pType StructSpecifier(pNode node)
         else
             returnType = newType(
                 STRUCTURE, newString(structItem->field->name),
-                copyFieldList(structItem->field->type->u.structure.field));
+                copyFieldList(structItem->field->type->data.structure.field));
     }
     // printType(returnType);
     return returnType;
@@ -835,8 +835,8 @@ void VarList(pNode node, pItem func)
 
     // VarList -> ParamDec
     pFieldList paramDec = ParamDec(temp);
-    func->field->type->u.function.argv = copyFieldList(paramDec);
-    cur = func->field->type->u.function.argv;
+    func->field->type->data.function.argv = copyFieldList(paramDec);
+    cur = func->field->type->data.function.argv;
     argc++;
 
     // VarList -> ParamDec COMMA VarList
@@ -853,7 +853,7 @@ void VarList(pNode node, pItem func)
         }
     }
 
-    func->field->type->u.function.argc = argc;
+    func->field->type->data.function.argc = argc;
 
     minusStackDepth(table->stack);
 }
@@ -1032,7 +1032,7 @@ void Dec(pNode node, pType specifier, pItem structInfo)
             // Copy判断是否重定义，无错则到结构体链表尾 记得delete掉Item
             pItem decitem = VarDec(get_syn_child(node, 0), specifier);
             pFieldList payload = decitem->field;
-            pFieldList structField = structInfo->field->type->u.structure.field;
+            pFieldList structField = structInfo->field->type->data.structure.field;
             pFieldList last = NULL;
             while (structField != NULL)
             {
@@ -1057,7 +1057,7 @@ void Dec(pNode node, pType specifier, pItem structInfo)
             if (last == NULL)
             {
                 // that is good
-                structInfo->field->type->u.structure.field =
+                structInfo->field->type->data.structure.field =
                     copyFieldList(decitem->field);
             }
             else
@@ -1263,7 +1263,7 @@ pType Exp(pNode node)
                     pError(NOT_A_ARRAY, t->lineno, msg);
                 }
                 else if (!p2 || p2->kind != BASIC ||
-                         p2->u.basic != INT_TYPE)
+                         p2->data.basic != INT_TYPE)
                 {
                     //报错，不用int索引[]
                     char msg[100] = {0};
@@ -1281,7 +1281,7 @@ pType Exp(pNode node)
                 }
                 else
                 {
-                    returnType = copyType(p1->u.array.elem);
+                    returnType = copyType(p1->data.array.elem);
                 }
                 if (p1)
                     deleteType(p1);
@@ -1295,7 +1295,7 @@ pType Exp(pNode node)
                 pType p1 = Exp(t);
                 pType returnType = NULL;
                 if (!p1 || p1->kind != STRUCTURE ||
-                    !p1->u.structure.structName)
+                    !p1->data.structure.structName)
                 {
                     //报错，对非结构体使用.运算符
                     pError(ILLEGAL_USE_DOT, t->lineno, "Illegal use of \".\".");
@@ -1303,7 +1303,7 @@ pType Exp(pNode node)
                 else
                 {
                     pNode ref_id = t->next->next;
-                    pFieldList structfield = p1->u.structure.field;
+                    pFieldList structfield = p1->data.structure.field;
                     while (structfield != NULL)
                     {
                         if (!strcmp(structfield->name, ref_id->strval))
@@ -1379,21 +1379,21 @@ pType Exp(pNode node)
         else if (!strcmp(t->next->next->name, "Args"))
         {
             Args(t->next->next, funcInfo);
-            return copyType(funcInfo->field->type->u.function.returnType);
+            return copyType(funcInfo->field->type->data.function.returnType);
         }
         // Exp -> ID LP RP
         else
         {
-            if (funcInfo->field->type->u.function.argc != 0)
+            if (funcInfo->field->type->data.function.argc != 0)
             {
                 char msg[100] = {0};
                 sprintf(msg,
                         "too few arguments to function \"%s\", except %d args.",
                         funcInfo->field->name,
-                        funcInfo->field->type->u.function.argc);
+                        funcInfo->field->type->data.function.argc);
                 pError(FUNC_AGRC_MISMATCH, node->lineno, msg);
             }
-            return copyType(funcInfo->field->type->u.function.returnType);
+            return copyType(funcInfo->field->type->data.function.returnType);
         }
     }
     // Exp -> ID
@@ -1436,7 +1436,7 @@ void Args(pNode node, pItem funcInfo)
     //       | Exp
     // printTreeInfo(node, 0);
     pNode temp = node;
-    pFieldList arg = funcInfo->field->type->u.function.argv;
+    pFieldList arg = funcInfo->field->type->data.function.argv;
     // printf("-----function atgs-------\n");
     // printFieldList(arg);
     // printf("---------end-------------\n");
@@ -1448,9 +1448,9 @@ void Args(pNode node, pItem funcInfo)
 
             // 输出正确定义
             sprintf(msg, "Function \"%s(", funcInfo->field->name);
-            for (pFieldList arg = funcInfo->field->type->u.function.argv; arg != NULL; arg = arg->tail)
+            for (pFieldList arg = funcInfo->field->type->data.function.argv; arg != NULL; arg = arg->tail)
             {
-                switch (arg->type->u.basic)
+                switch (arg->type->data.basic)
                 {
                 case INT_TYPE:
                     sprintf(msg + strlen(msg), "int");
@@ -1519,7 +1519,7 @@ void Args(pNode node, pItem funcInfo)
     {
         char msg[100] = {0};
         sprintf(msg, "too few arguments to function \"%s\", except %d args.",
-                funcInfo->field->name, funcInfo->field->type->u.function.argc);
+                funcInfo->field->name, funcInfo->field->type->data.function.argc);
         pError(FUNC_AGRC_MISMATCH, node->lineno, msg);
     }
 }
