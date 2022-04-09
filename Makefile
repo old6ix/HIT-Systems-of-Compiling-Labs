@@ -40,20 +40,7 @@ parser-debug:
 		-o C--parser-debug $(src)
 	$(call echo_success,"Done.")
 
-.PHONY: examples test clean
-
-# 编译全部示例代码
-examples:
-	$(call echo_info,"Building count...")
-	cd examples && $(FLEX) -o count.yy.c count.l
-	cd examples && $(CC) $(FLEX_CFLAGS) count.yy.c -o count
-	$(call echo_success,"Done.")
-
-	$(call echo_info,"Building calc...")
-	cd examples && $(BISON) -d calc.y
-	cd examples && $(FLEX) -o calc.yy.c calc.l
-	cd examples && $(CC) $(FLEX_CFLAGS) -o calc calc.tab.c calc.yy.c
-	$(call echo_success,"Done.")
+.PHONY: test clean
 
 # 运行单元测试
 test:
@@ -70,8 +57,4 @@ test:
 clean:
 	$(call echo_info,"Cleaning C--parser...")
 	rm -f C--parser C--parser-debug C--lexical.yy.c C--syntax.tab.c C--syntax.tab.h C--syntax.output
-	$(call echo_info,"Cleaning examples...")
-	cd examples && rm -f \
-		calc calc.yy.c calc.tab.c calc.tab.h \
-		count count.yy.c count.tab.c count.tab.h
 	$(call echo_success,"Done.")
