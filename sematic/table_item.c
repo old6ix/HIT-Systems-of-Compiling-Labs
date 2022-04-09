@@ -4,12 +4,12 @@
 #include "symbol_schema.h"
 #include "table_item.h"
 
-pItem newItem(int symbolDepth, pFieldList pfield)
+pItem newItem(int depth, pFieldList field)
 {
     pItem p = (pItem)malloc(sizeof(TableItem));
     assert(p != NULL);
-    p->symbolDepth = symbolDepth;
-    p->field = pfield;
+    p->depth = depth;
+    p->field = field;
     p->nextHash = NULL;
     p->nextSymbol = NULL;
     return p;

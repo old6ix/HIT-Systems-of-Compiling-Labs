@@ -127,33 +127,27 @@ pSchema StructSpecifier(SyntaxNode *node)
     // Tag -> ID
     pSchema returnType = NULL;
     SyntaxNode *t = get_syn_child(node, 1);
-    // StructSpecifier->STRUCT OptTag LC DefList RC
-    // printTreeInfo(t, 0);
     if (strcmp(t->name, "Tag"))
     {
-        // addStructLayer(table);
         pItem structItem =
             newItem(table->stack->curStackDepth,
                     newFieldList("", newType(STRUCTURE, NULL, NULL)));
         if (!strcmp(t->name, "OptTag"))
         {
             setFieldListName(structItem->field, get_syn_child(t, 0)->strval); // t->child->val
-            t = t->next;
+            t = get_syn_brother(t, 1);
         }
-        // unnamed struct
-        else
+        else // 未命名结构体
         {
             table->unNamedStructNum++;
             char structName[20] = {0};
             sprintf(structName, "%d", table->unNamedStructNum);
-            // printf("unNamed struct's name is %s.\n", structName);
             setFieldListName(structItem->field, structName);
         }
-        //现在我们进入结构体了！注意，报错信息会有不同！
-        // addStackDepth(table->stack);
-        if (!strcmp(t->next->name, "DefList"))
+        // 进入结构体。注意报错信息会有不同
+        if (!strcmp(get_syn_brother(t, 1)->name, "DefList"))
         {
-            DefList(t->next, structItem);
+            DefList(get_syn_brother(t, 1), structItem);
         }
 
         if (checkTableItemConflict(table, structItem))
@@ -169,24 +163,15 @@ pSchema StructSpecifier(SyntaxNode *node)
                 STRUCTURE, newString(structItem->field->name),
                 copyFieldList(structItem->field->schema->data.structure.field));
 
-            // printf("\nnew Type:\n");
-            // printType(returnType);
-            // printf("\n");
-
             if (!strcmp(get_syn_child(node, 1)->name, "OptTag"))
             {
                 addTableItem(table, structItem);
             }
-            // OptTag -> e
-            else
+            else // OptTag -> e
             {
                 deleteItem(structItem);
             }
         }
-
-        //我们出了结构体
-        // minusStackDepth(table->stack);
-        // minusStructLayer(table);
     }
 
     // StructSpecifier->STRUCT Tag
@@ -204,7 +189,6 @@ pSchema StructSpecifier(SyntaxNode *node)
                 STRUCTURE, newString(structItem->field->name),
                 copyFieldList(structItem->field->schema->data.structure.field));
     }
-    // printType(returnType);
     return returnType;
 }
 
@@ -218,15 +202,10 @@ pItem VarDec(SyntaxNode *node, pSchema specifier)
     while (id->child_cnt > 0)
         id = get_syn_child(id, 0);
     pItem p = newItem(table->stack->curStackDepth, newFieldList(id->strval, NULL));
-    // return newItem(table->stack->curStackDepth,
-    //                newFieldList(id->val, generateVarDecType(node,
-    //                specifier)));
 
     // VarDec -> ID
-    // printTreeInfo(node, 0);
     if (!strcmp(get_syn_child(node, 0)->name, "ID"))
     {
-        // printf("copy type tp %s.\n", node->child->val);
         p->field->schema = copyType(specifier);
     }
     // VarDec -> VarDec LB INT RB
@@ -234,35 +213,15 @@ pItem VarDec(SyntaxNode *node, pSchema specifier)
     {
         SyntaxNode *varDec = get_syn_child(node, 0);
         pSchema temp = specifier;
-        // printf("VarDec -> VarDec LB INT RB.\n");
         while (varDec->next)
         {
-            // printTreeInfo(varDec, 0);
-            // printf("number: %s\n", varDec->next->next->val);
-            // printf("temp type: %d\n", temp->kind);
             p->field->schema = newType(ARRAY, copyType(temp), varDec->next->next->intval);
-            // printf("newType. newType: elem type: %d, elem size: %d.\n",
-            //        p->field->type->u.array.elem->kind,
-            //        p->field->type->u.array.size);
             temp = p->field->schema;
             varDec = get_syn_child(varDec, 0);
         }
     }
-    // printf("-------test VarDec ------\n");
-    // printType(specifier);
-    // printFieldList(p->field);
-    // printf("-------test End ------\n");
     return p;
 }
-
-// pType generateVarDecType(SyntaxNode * node, pType type) {
-//     // VarDec -> ID
-//     if (!strcmp(node->child->name, "ID")) return copyType(type);
-//     // VarDec -> VarDec LB INT RB
-//     else
-//         return newType(ARRAY, atoi(get_syn_child(node, 2)->val),
-//                        generateVarDecType(node, type));
-// }
 
 void FunDec(SyntaxNode *node, pSchema returnType)
 {
@@ -362,7 +321,6 @@ void CompSt(SyntaxNode *node, pSchema returnType)
     if (node == NULL)
         return;
     // CompSt -> LC DefList StmtList RC
-    // printTreeInfo(node, 0);
     addStackDepth(table->stack);
     SyntaxNode *temp = get_syn_child(node, 1);
     if (!strcmp(temp->name, "DefList"))
@@ -383,7 +341,6 @@ void StmtList(SyntaxNode *node, pSchema returnType)
     // assert(node != NULL);
     // StmtList -> Stmt StmtList
     //           | e
-    // printTreeInfo(node, 0);
     while (node)
     {
         Stmt(get_syn_child(node, 0), returnType);
@@ -401,7 +358,6 @@ void Stmt(SyntaxNode *node, pSchema returnType)
     //       | IF LP Exp RP Stmt
     //       | IF LP Exp RP Stmt ELSE Stmt
     //       | WHILE LP Exp RP Stmt
-    // printTreeInfo(node, 0);
 
     pSchema expType = NULL;
     // Stmt -> Exp SEMI
@@ -463,13 +419,12 @@ void Def(SyntaxNode *node, pItem structInfo)
         return;
 
     // Def -> Specifier DecList SEMI
-    // TODO:调用接口
     pSchema dectype;
     if (node->child_cnt)
         dectype = Specifier(get_syn_child(node, 0));
     else
         dectype = Specifier(NULL);
-    //你总会得到一个正确的type
+
     DecList(get_syn_child(node, 1), dectype, structInfo);
     if (dectype)
         deleteType(dectype);
@@ -716,8 +671,7 @@ pSchema Exp(SyntaxNode *node)
                 deleteType(p2);
             return returnType;
         }
-        // 数组和结构体访问
-        else
+        else // 数组和结构体访问
         {
             // Exp -> Exp LB Exp RB
             if (!strcmp(t->next->name, "["))
@@ -728,8 +682,7 @@ pSchema Exp(SyntaxNode *node)
                 pSchema returnType = NULL;
 
                 if (!p1)
-                {
-                    // 第一个exp为null，上层报错，这里不用再管
+                { // 第一个exp为null，上层报错，这里不用再管
                 }
                 else if (p1 && p1->kind != ARRAY)
                 {
@@ -738,8 +691,7 @@ pSchema Exp(SyntaxNode *node)
                     sprintf(msg, "\"%s\" is not an array.", get_syn_child(t, 0)->strval);
                     pError(NOT_A_ARRAY, t->lineno, msg);
                 }
-                else if (!p2 || p2->kind != BASIC ||
-                         p2->data.basic != INT_TYPE)
+                else if (!p2 || p2->kind != BASIC || p2->data.basic != INT_TYPE)
                 {
                     //报错，不用int索引[]
                     char msg[100] = {0};
@@ -773,7 +725,6 @@ pSchema Exp(SyntaxNode *node)
                 if (!p1 || p1->kind != STRUCTURE ||
                     !p1->data.structure.structName)
                 {
-                    //报错，对非结构体使用.运算符
                     pError(ILLEGAL_USE_DOT, t->lineno, "Illegal use of \".\".");
                 }
                 else
@@ -790,7 +741,6 @@ pSchema Exp(SyntaxNode *node)
                     }
                     if (structfield == NULL)
                     {
-                        //报错，没有可以匹配的域名
                         printf("Error type 14 at Line %d: Non-existent field \"%s\".\n",
                                t->lineno, get_syn_child(node, 2)->strval);
                     }
@@ -904,80 +854,70 @@ pSchema Exp(SyntaxNode *node)
     }
 }
 
+void func_argc_mismatch_err(char *msg, pItem correct_info, SyntaxNode *err_info)
+{
+    sprintf(msg, "Function \"%s(", correct_info->field->name);
+    for (pFieldList arg = correct_info->field->schema->data.function.argv; arg != NULL; arg = arg->next)
+    {
+        switch (arg->schema->data.basic)
+        {
+        case INT_TYPE:
+            sprintf(msg + strlen(msg), "int");
+            break;
+        case FLOAT_TYPE:
+            sprintf(msg + strlen(msg), "float");
+            break;
+        default:
+            break;
+        }
+        if (arg->next != NULL) // 若不是最后一个参数，则用逗号隔开
+            sprintf(msg + strlen(msg), ", ");
+    }
+    sprintf(msg + strlen(msg), ")\" is not applicable for arguments \"(");
+
+    // 输出错误参数
+    for (SyntaxNode *arg_node = err_info; arg_node != NULL; arg_node = get_syn_child(arg_node, 2))
+    {
+        switch (get_syn_child(get_syn_child(arg_node, 0), 0)->node_type)
+        {
+        case ENUM_INT:
+            sprintf(msg + strlen(msg), "int");
+            break;
+        case ENUM_FLOAT:
+            sprintf(msg + strlen(msg), "float");
+            break;
+        default:
+            break;
+        }
+        if (arg_node->child_cnt == 3) // 若不是最后一个参数，则用逗号隔开
+            sprintf(msg + strlen(msg), ", ");
+    }
+    sprintf(msg + strlen(msg), ")\".");
+
+    pError(FUNC_AGRC_MISMATCH, err_info->lineno, msg);
+}
+
 void Args(SyntaxNode *node, pItem funcInfo)
 {
     if (node == NULL)
         return;
     // Args -> Exp COMMA Args
     //       | Exp
-    // printTreeInfo(node, 0);
     SyntaxNode *temp = node;
     pFieldList arg = funcInfo->field->schema->data.function.argv;
-    // printf("-----function atgs-------\n");
-    // printFieldList(arg);
-    // printf("---------end-------------\n");
     while (temp)
     {
-        if (arg == NULL)
+        pSchema realType = NULL;
+        if (arg != NULL)
+            realType = Exp(get_syn_child(temp, 0));
+
+        if (arg == NULL || !checkType(realType, arg->schema))
         {
             char msg[100] = {0};
-
-            // 输出正确定义
-            sprintf(msg, "Function \"%s(", funcInfo->field->name);
-            for (pFieldList arg = funcInfo->field->schema->data.function.argv; arg != NULL; arg = arg->next)
-            {
-                switch (arg->schema->data.basic)
-                {
-                case INT_TYPE:
-                    sprintf(msg + strlen(msg), "int");
-                    break;
-                case FLOAT_TYPE:
-                    sprintf(msg + strlen(msg), "float");
-                    break;
-                default:
-                    break;
-                }
-                if (arg->next != NULL) // 若不是最后一个参数，则用逗号隔开
-                    sprintf(msg + strlen(msg), ", ");
-            }
-            sprintf(msg + strlen(msg), ")\" is not applicable for arguments \"(");
-
-            // 输出错误参数
-            for (SyntaxNode *arg_node = node; arg_node != NULL; arg_node = get_syn_child(arg_node, 2))
-            {
-                switch (get_syn_child(get_syn_child(arg_node, 0), 0)->node_type)
-                {
-                case ENUM_INT:
-                    sprintf(msg + strlen(msg), "int");
-                    break;
-                case ENUM_FLOAT:
-                    sprintf(msg + strlen(msg), "float");
-                    break;
-                default:
-                    break;
-                }
-                if (arg_node->child_cnt == 3) // 若不是最后一个参数，则用逗号隔开
-                    sprintf(msg + strlen(msg), ", ");
-            }
-            sprintf(msg + strlen(msg), ")\".");
-
-            pError(FUNC_AGRC_MISMATCH, node->lineno, msg);
+            func_argc_mismatch_err(msg, funcInfo, node);
             break;
         }
-        pSchema realType = Exp(get_syn_child(temp, 0));
-        // printf("=======arg type=========\n");
-        // printType(realType);
-        // printf("===========end==========\n");
-        if (!checkType(realType, arg->schema))
-        {
-            char msg[100] = {0};
-            sprintf(msg, "Function \"%s\" is not applicable for arguments.",
-                    funcInfo->field->name);
-            pError(FUNC_AGRC_MISMATCH, node->lineno, msg);
-            if (realType)
-                deleteType(realType);
-            return;
-        }
+
         if (realType)
             deleteType(realType);
 
@@ -994,8 +934,6 @@ void Args(SyntaxNode *node, pItem funcInfo)
     if (arg != NULL)
     {
         char msg[100] = {0};
-        sprintf(msg, "too few arguments to function \"%s\", except %d args.",
-                funcInfo->field->name, funcInfo->field->schema->data.function.argc);
-        pError(FUNC_AGRC_MISMATCH, node->lineno, msg);
+        func_argc_mismatch_err(msg, funcInfo, node);
     }
 }

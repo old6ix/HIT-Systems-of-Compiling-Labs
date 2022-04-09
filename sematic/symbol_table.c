@@ -54,7 +54,7 @@ bool checkTableItemConflict(pTable table, pItem item)
             if (temp->field->schema->kind == STRUCTURE ||
                 item->field->schema->kind == STRUCTURE)
                 return 1;
-            if (temp->symbolDepth == table->stack->curStackDepth)
+            if (temp->depth == table->stack->curStackDepth)
                 return 1;
         }
         temp = temp->nextHash;
@@ -123,7 +123,7 @@ void printTable(pTable table)
             while (item)
             {
                 printf(" -> name: %s depth: %d\n", item->field->name,
-                       item->symbolDepth);
+                       item->depth);
                 printf("========FiledList========\n");
                 printFieldList(item->field);
                 printf("===========End===========\n");
