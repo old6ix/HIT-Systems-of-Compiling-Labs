@@ -5,6 +5,9 @@ BISON = /usr/bin/bison
 CFLAGS = -Wall
 FLEX_CFLAGS = $(CFLAGS) -lfl
 
+src = main.c C--syntax.tab.c syntax_tree.c sema.c \
+	sematic/sema_util.c sematic/sema_error.c sematic/symbol_schema.c sematic/field_list.c \
+	sematic/table_item.c sematic/hash_table.c sematic/stack.c
 
 # 日志输出函数
 define echo_info
@@ -23,8 +26,7 @@ parser:
 	$(FLEX) -o C--lexical.yy.c C--lexical.l
 	$(call echo_info,"GCC compiling...")
 	$(CC) $(FLEX_CFLAGS) \
-		-o C--parser \
-		main.c C--syntax.tab.c syntax_tree.c sema.c
+		-o C--parser $(src)
 	$(call echo_success,"Done.")
 
 parser-debug:
@@ -35,8 +37,7 @@ parser-debug:
 	$(call echo_info,"GCC compiling...")
 	$(CC) $(FLEX_CFLAGS) -D DEBUG -D YYDEBUG=1 \
 		-g \
-		-o C--parser-debug \
-		main.c C--syntax.tab.c syntax_tree.c sema.c
+		-o C--parser-debug $(src)
 	$(call echo_success,"Done.")
 
 .PHONY: examples test clean

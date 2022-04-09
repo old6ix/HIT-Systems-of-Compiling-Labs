@@ -4,334 +4,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "sematic/sema_util.h"
+#include "sematic/sema_error.h"
 #include "sema.h"
 
 pTable table;
 
-static inline char *newString(char *src)
-{
-    if (src == NULL)
-        return NULL;
-    int length = strlen(src) + 1;
-    char *p = (char *)malloc(sizeof(char) * length);
-    assert(p != NULL);
-    strncpy(p, src, length);
-    return p;
-}
-
-// Type functions
-pSchema newType(SymbolKind kind, ...)
-{
-    pSchema p = (pSchema)malloc(sizeof(SymbolSchema));
-    assert(p != NULL);
-    p->kind = kind;
-    va_list vaList;
-    assert(kind == BASIC || kind == ARRAY || kind == STRUCTURE || kind == FUNCTION);
-    switch (kind)
-    {
-    case BASIC:
-        va_start(vaList, 1);
-        p->data.basic = va_arg(vaList, BasicType);
-        break;
-    case ARRAY:
-        va_start(vaList, 2);
-        p->data.array.elem = va_arg(vaList, pSchema);
-        p->data.array.size = va_arg(vaList, int);
-        break;
-    case STRUCTURE:
-        va_start(vaList, 2);
-        p->data.structure.structName = va_arg(vaList, char *);
-        p->data.structure.field = va_arg(vaList, pFieldList);
-        break;
-    case FUNCTION:
-        va_start(vaList, 3);
-        p->data.function.argc = va_arg(vaList, int);
-        p->data.function.argv = va_arg(vaList, pFieldList);
-        p->data.function.returnType = va_arg(vaList, pSchema);
-        break;
-    }
-    va_end(vaList);
-    return p;
-}
-
-pSchema copyType(pSchema src)
-{
-    if (src == NULL)
-        return NULL;
-    pSchema p = (pSchema)malloc(sizeof(SymbolSchema));
-    assert(p != NULL);
-    p->kind = src->kind;
-    assert(p->kind == BASIC || p->kind == ARRAY || p->kind == STRUCTURE || p->kind == FUNCTION);
-    switch (p->kind)
-    {
-    case BASIC:
-        p->data.basic = src->data.basic;
-        break;
-    case ARRAY:
-        p->data.array.elem = copyType(src->data.array.elem);
-        p->data.array.size = src->data.array.size;
-        break;
-    case STRUCTURE:
-        p->data.structure.structName = newString(src->data.structure.structName);
-        p->data.structure.field = copyFieldList(src->data.structure.field);
-        break;
-    case FUNCTION:
-        p->data.function.argc = src->data.function.argc;
-        p->data.function.argv = copyFieldList(src->data.function.argv);
-        p->data.function.returnType = copyType(src->data.function.returnType);
-        break;
-    }
-
-    return p;
-}
-
-void deleteType(pSchema type)
-{
-    assert(type != NULL);
-    assert(type->kind == BASIC || type->kind == ARRAY ||
-           type->kind == STRUCTURE || type->kind == FUNCTION);
-    pFieldList temp = NULL;
-    // pFieldList tDelete = NULL;
-    switch (type->kind)
-    {
-    case BASIC:
-        break;
-    case ARRAY:
-        deleteType(type->data.array.elem);
-        type->data.array.elem = NULL;
-        break;
-    case STRUCTURE:
-        if (type->data.structure.structName)
-            free(type->data.structure.structName);
-        type->data.structure.structName = NULL;
-
-        temp = type->data.structure.field;
-        while (temp)
-        {
-            pFieldList tDelete = temp;
-            temp = temp->next;
-            deleteFieldList(tDelete);
-        }
-        type->data.structure.field = NULL;
-        break;
-    case FUNCTION:
-        deleteType(type->data.function.returnType);
-        type->data.function.returnType = NULL;
-        temp = type->data.function.argv;
-        while (temp)
-        {
-            pFieldList tDelete = temp;
-            temp = temp->next;
-            deleteFieldList(tDelete);
-        }
-        type->data.function.argv = NULL;
-        break;
-    }
-    free(type);
-}
-
-bool checkType(pSchema type1, pSchema type2)
-{
-    if (type1 == NULL || type2 == NULL)
-        return 1;
-    if (type1->kind == FUNCTION || type2->kind == FUNCTION)
-        return 0;
-    if (type1->kind != type2->kind)
-        return 0;
-    else
-    {
-        assert(type1->kind == BASIC || type1->kind == ARRAY ||
-               type1->kind == STRUCTURE);
-        switch (type1->kind)
-        {
-        case BASIC:
-            return type1->data.basic == type2->data.basic;
-        case ARRAY:
-            return checkType(type1->data.array.elem, type2->data.array.elem);
-        case STRUCTURE:
-            return !strcmp(type1->data.structure.structName,
-                           type2->data.structure.structName);
-        }
-    }
-}
-
-void printType(pSchema type)
-{
-    if (type == NULL)
-    {
-        printf("type is NULL.\n");
-    }
-    else
-    {
-        printf("type kind: %d\n", type->kind);
-        switch (type->kind)
-        {
-        case BASIC:
-            printf("type basic: %d\n", type->data.basic);
-            break;
-        case ARRAY:
-            printf("array size: %d\n", type->data.array.size);
-            printType(type->data.array.elem);
-            break;
-        case STRUCTURE:
-            if (!type->data.structure.structName)
-                printf("struct name is NULL\n");
-            else
-            {
-                printf("struct name is %s\n", type->data.structure.structName);
-            }
-            printFieldList(type->data.structure.field);
-            break;
-        case FUNCTION:
-            printf("function argc is %d\n", type->data.function.argc);
-            printf("function args:\n");
-            printFieldList(type->data.function.argv);
-            printf("function return type:\n");
-            printType(type->data.function.returnType);
-            break;
-        }
-    }
-}
-
-// FieldList functions
-pFieldList newFieldList(char *newName, pSchema newType)
-{
-    pFieldList p = (pFieldList)malloc(sizeof(FieldList));
-    assert(p != NULL);
-    p->name = newString(newName);
-    p->schema = newType;
-    p->next = NULL;
-    return p;
-}
-
-pFieldList copyFieldList(pFieldList src)
-{
-    assert(src != NULL);
-    pFieldList head = NULL, cur = NULL;
-    pFieldList temp = src;
-
-    while (temp)
-    {
-        if (!head)
-        {
-            head = newFieldList(temp->name, copyType(temp->schema));
-            cur = head;
-            temp = temp->next;
-        }
-        else
-        {
-            cur->next = newFieldList(temp->name, copyType(temp->schema));
-            cur = cur->next;
-            temp = temp->next;
-        }
-    }
-    return head;
-}
-
-void deleteFieldList(pFieldList fieldList)
-{
-    assert(fieldList != NULL);
-    if (fieldList->name)
-    {
-        free(fieldList->name);
-        fieldList->name = NULL;
-    }
-    if (fieldList->schema)
-        deleteType(fieldList->schema);
-    fieldList->schema = NULL;
-    free(fieldList);
-}
-
-void setFieldListName(pFieldList p, char *newName)
-{
-    assert(p != NULL && newName != NULL);
-    if (p->name != NULL)
-    {
-        free(p->name);
-    }
-    // int length = strlen(newName) + 1;
-    // p->name = (char*)malloc(sizeof(char) * length);
-    // strncpy(p->name, newName, length);
-    p->name = newString(newName);
-}
-
-void printFieldList(pFieldList fieldList)
-{
-    if (fieldList == NULL)
-        printf("fieldList is NULL\n");
-    else
-    {
-        printf("fieldList name is: %s\n", fieldList->name);
-        printf("FieldList Type:\n");
-        printType(fieldList->schema);
-        printFieldList(fieldList->next);
-    }
-}
-
-// tableItem functions
-pItem newItem(int symbolDepth, pFieldList pfield)
-{
-    pItem p = (pItem)malloc(sizeof(TableItem));
-    assert(p != NULL);
-    p->symbolDepth = symbolDepth;
-    p->field = pfield;
-    p->nextHash = NULL;
-    p->nextSymbol = NULL;
-    return p;
-}
-
-void deleteItem(pItem item)
-{
-    assert(item != NULL);
-    if (item->field != NULL)
-        deleteFieldList(item->field);
-    free(item);
-}
-
-// Hash functions
-pHash newHash()
-{
-    pHash p = (pHash)malloc(sizeof(HashTable));
-    assert(p != NULL);
-    p->hashArray = (pItem *)malloc(sizeof(pItem) * HASH_TABLE_SIZE);
-    assert(p->hashArray != NULL);
-    for (int i = 0; i < HASH_TABLE_SIZE; i++)
-    {
-        p->hashArray[i] = NULL;
-    }
-    return p;
-}
-
-void deleteHash(pHash hash)
-{
-    assert(hash != NULL);
-    for (int i = 0; i < HASH_TABLE_SIZE; i++)
-    {
-        pItem temp = hash->hashArray[i];
-        while (temp)
-        {
-            pItem tdelete = temp;
-            temp = temp->nextHash;
-            deleteItem(tdelete);
-        }
-        hash->hashArray[i] = NULL;
-    }
-    free(hash->hashArray);
-    hash->hashArray = NULL;
-    free(hash);
-}
-
-pItem getHashHead(pHash hash, int index)
-{
-    assert(hash != NULL);
-    return hash->hashArray[index];
-}
-
-void setHashHead(pHash hash, int index, pItem newVal)
-{
-    assert(hash != NULL);
-    hash->hashArray[index] = newVal;
-}
 // Table functions
 
 pTable initTable()
@@ -428,17 +106,6 @@ void deleteTableItem(pTable table, pItem item)
     deleteItem(item);
 }
 
-bool isStructDef(pItem src)
-{
-    if (src == NULL)
-        return 0;
-    if (src->field->schema->kind != STRUCTURE)
-        return 0;
-    if (src->field->schema->data.structure.structName)
-        return 0;
-    return 1;
-}
-
 // void addStructLayer(pTable table) { table->enterStructLayer++; }
 
 // void minusStructLayer(pTable table) { table->enterStructLayer--; }
@@ -485,57 +152,8 @@ void printTable(pTable table)
     printf("-------------------end--------------------\n");
 }
 
-// Stack functions
-pStack newStack()
-{
-    pStack p = (pStack)malloc(sizeof(Stack));
-    assert(p != NULL);
-    p->stackArray = (pItem *)malloc(sizeof(pItem) * HASH_TABLE_SIZE);
-    assert(p->stackArray != NULL);
-    for (int i = 0; i < HASH_TABLE_SIZE; i++)
-    {
-        p->stackArray[i] = NULL;
-    }
-    p->curStackDepth = 0;
-    return p;
-}
-
-void deleteStack(pStack stack)
-{
-    assert(stack != NULL);
-    free(stack->stackArray);
-    stack->stackArray = NULL;
-    stack->curStackDepth = 0;
-    free(stack);
-}
-
-void addStackDepth(pStack stack)
-{
-    assert(stack != NULL);
-    stack->curStackDepth++;
-}
-
-void minusStackDepth(pStack stack)
-{
-    assert(stack != NULL);
-    stack->curStackDepth--;
-}
-
-pItem getCurDepthStackHead(pStack stack)
-{
-    assert(stack != NULL);
-    return stack->stackArray[stack->curStackDepth];
-    // return p == NULL ? NULL : p->stackArray[p->curStackDepth];
-}
-
-void setCurDepthStackHead(pStack stack, pItem newVal)
-{
-    assert(stack != NULL);
-    stack->stackArray[stack->curStackDepth] = newVal;
-}
-
 // Global function
-void traverseTree(pNode node)
+void traverseTree(SyntaxNode *node)
 {
     if (node == NULL)
         return;
@@ -543,14 +161,14 @@ void traverseTree(pNode node)
     if (!strcmp(node->name, "ExtDef"))
         ExtDef(node);
 
-    for (size_t i = 0; i < node->child_cnt; i++) // TODO Edited
+    for (size_t i = 0; i < node->child_cnt; i++)
     {
         traverseTree(get_syn_child(node, i));
     }
 }
 
 // Generate symbol table functions
-void ExtDef(pNode node)
+void ExtDef(SyntaxNode *node)
 {
     if (node == NULL)
         return;
@@ -582,13 +200,13 @@ void ExtDef(pNode node)
     // or is struct define(have been processe inSpecifier())
 }
 
-void ExtDecList(pNode node, pSchema specifier)
+void ExtDecList(SyntaxNode *node, pSchema specifier)
 {
     if (node == NULL)
         return;
     // ExtDecList -> VarDec
     //             | VarDec COMMA ExtDecList
-    pNode temp = node;
+    SyntaxNode *temp = node;
     while (temp)
     {
         pItem item = VarDec(get_syn_child(temp, 0), specifier);
@@ -615,13 +233,13 @@ void ExtDecList(pNode node, pSchema specifier)
     }
 }
 
-pSchema Specifier(pNode node)
+pSchema Specifier(SyntaxNode *node)
 {
     assert(node != NULL);
     // Specifier -> TYPE
     //            | StructSpecifier
 
-    pNode t = get_syn_child(node, 0);
+    SyntaxNode *t = get_syn_child(node, 0);
     // Specifier -> TYPE
     if (!strcmp(t->name, "TYPE"))
     {
@@ -641,7 +259,7 @@ pSchema Specifier(pNode node)
     }
 }
 
-pSchema StructSpecifier(pNode node)
+pSchema StructSpecifier(SyntaxNode *node)
 {
     assert(node != NULL);
     // StructSpecifier -> STRUCT OptTag LC DefList RC
@@ -650,7 +268,7 @@ pSchema StructSpecifier(pNode node)
     // OptTag -> ID | e
     // Tag -> ID
     pSchema returnType = NULL;
-    pNode t = get_syn_child(node, 1);
+    SyntaxNode *t = get_syn_child(node, 1);
     // StructSpecifier->STRUCT OptTag LC DefList RC
     // printTreeInfo(t, 0);
     if (strcmp(t->name, "Tag"))
@@ -732,12 +350,12 @@ pSchema StructSpecifier(pNode node)
     return returnType;
 }
 
-pItem VarDec(pNode node, pSchema specifier)
+pItem VarDec(SyntaxNode *node, pSchema specifier)
 {
     assert(node != NULL);
     // VarDec -> ID
     //         | VarDec LB INT RB
-    pNode id = node;
+    SyntaxNode *id = node;
     // get ID
     while (id->child_cnt > 0)
         id = get_syn_child(id, 0);
@@ -756,7 +374,7 @@ pItem VarDec(pNode node, pSchema specifier)
     // VarDec -> VarDec LB INT RB
     else
     {
-        pNode varDec = get_syn_child(node, 0);
+        SyntaxNode *varDec = get_syn_child(node, 0);
         pSchema temp = specifier;
         // printf("VarDec -> VarDec LB INT RB.\n");
         while (varDec->next)
@@ -779,7 +397,7 @@ pItem VarDec(pNode node, pSchema specifier)
     return p;
 }
 
-// pType generateVarDecType(pNode node, pType type) {
+// pType generateVarDecType(SyntaxNode * node, pType type) {
 //     // VarDec -> ID
 //     if (!strcmp(node->child->name, "ID")) return copyType(type);
 //     // VarDec -> VarDec LB INT RB
@@ -788,7 +406,7 @@ pItem VarDec(pNode node, pSchema specifier)
 //                        generateVarDecType(node, type));
 // }
 
-void FunDec(pNode node, pSchema returnType)
+void FunDec(SyntaxNode *node, pSchema returnType)
 {
     if (node == NULL)
         return;
@@ -822,7 +440,7 @@ void FunDec(pNode node, pSchema returnType)
     }
 }
 
-void VarList(pNode node, pItem func)
+void VarList(SyntaxNode *node, pItem func)
 {
     if (node == NULL)
         return;
@@ -830,7 +448,7 @@ void VarList(pNode node, pItem func)
     //          | ParamDec
     addStackDepth(table->stack);
     int argc = 0;
-    pNode temp = get_syn_child(node, 0);
+    SyntaxNode *temp = get_syn_child(node, 0);
     pFieldList cur = NULL;
 
     // VarList -> ParamDec
@@ -858,7 +476,7 @@ void VarList(pNode node, pItem func)
     minusStackDepth(table->stack);
 }
 
-pFieldList ParamDec(pNode node)
+pFieldList ParamDec(SyntaxNode *node)
 {
     assert(node != NULL);
     // ParamDec -> Specifier VarDec
@@ -881,14 +499,14 @@ pFieldList ParamDec(pNode node)
     }
 }
 
-void CompSt(pNode node, pSchema returnType)
+void CompSt(SyntaxNode *node, pSchema returnType)
 {
     if (node == NULL)
         return;
     // CompSt -> LC DefList StmtList RC
     // printTreeInfo(node, 0);
     addStackDepth(table->stack);
-    pNode temp = get_syn_child(node, 1);
+    SyntaxNode *temp = get_syn_child(node, 1);
     if (!strcmp(temp->name, "DefList"))
     {
         DefList(temp, NULL);
@@ -902,7 +520,7 @@ void CompSt(pNode node, pSchema returnType)
     clearCurDepthStackList(table);
 }
 
-void StmtList(pNode node, pSchema returnType)
+void StmtList(SyntaxNode *node, pSchema returnType)
 {
     // assert(node != NULL);
     // StmtList -> Stmt StmtList
@@ -915,7 +533,7 @@ void StmtList(pNode node, pSchema returnType)
     }
 }
 
-void Stmt(pNode node, pSchema returnType)
+void Stmt(SyntaxNode *node, pSchema returnType)
 {
     if (node == NULL)
         return;
@@ -950,7 +568,7 @@ void Stmt(pNode node, pSchema returnType)
     // Stmt -> IF LP Exp RP Stmt
     else if (!strcmp(get_syn_child(node, 0)->name, "IF"))
     {
-        pNode stmt = get_syn_child(node, 4);
+        SyntaxNode *stmt = get_syn_child(node, 4);
         expType = Exp(get_syn_child(node, 2));
         Stmt(stmt, returnType);
         // Stmt -> IF LP Exp RP Stmt ELSE Stmt
@@ -969,7 +587,7 @@ void Stmt(pNode node, pSchema returnType)
         deleteType(expType);
 }
 
-void DefList(pNode node, pItem structInfo)
+void DefList(SyntaxNode *node, pItem structInfo)
 {
     // assert(node != NULL);
     // DefList -> Def DefList
@@ -981,7 +599,7 @@ void DefList(pNode node, pItem structInfo)
     }
 }
 
-void Def(pNode node, pItem structInfo)
+void Def(SyntaxNode *node, pItem structInfo)
 {
     if (node == NULL) // 空产生式
         return;
@@ -999,13 +617,13 @@ void Def(pNode node, pItem structInfo)
         deleteType(dectype);
 }
 
-void DecList(pNode node, pSchema specifier, pItem structInfo)
+void DecList(SyntaxNode *node, pSchema specifier, pItem structInfo)
 {
     if (node == NULL)
         return;
     // DecList -> Dec
     //          | Dec COMMA DecList
-    pNode temp = node;
+    SyntaxNode *temp = node;
     while (temp)
     {
         Dec(get_syn_child(temp, 0), specifier, structInfo);
@@ -1016,7 +634,7 @@ void DecList(pNode node, pSchema specifier, pItem structInfo)
     }
 }
 
-void Dec(pNode node, pSchema specifier, pItem structInfo)
+void Dec(SyntaxNode *node, pSchema specifier, pItem structInfo)
 {
     if (node == NULL)
         return;
@@ -1135,7 +753,7 @@ void Dec(pNode node, pSchema specifier, pItem structInfo)
     }
 }
 
-pSchema Exp(pNode node)
+pSchema Exp(SyntaxNode *node)
 {
     assert(node != NULL);
     // Exp -> Exp ASSIGNOP Exp
@@ -1156,7 +774,7 @@ pSchema Exp(pNode node)
     //      | ID
     //      | INT
     //      | FLOAT
-    pNode t = get_syn_child(node, 0);
+    SyntaxNode *t = get_syn_child(node, 0);
     // exp will only check if the cal is right
     //  printTable(table);
     //二值运算
@@ -1173,7 +791,7 @@ pSchema Exp(pNode node)
             if (!strcmp(t->next->name, "="))
             {
                 //检查左值
-                pNode tchild = get_syn_child(t, 0);
+                SyntaxNode *tchild = get_syn_child(t, 0);
 
                 if (!strcmp(tchild->name, "FLOAT") ||
                     !strcmp(tchild->name, "INT"))
@@ -1267,7 +885,7 @@ pSchema Exp(pNode node)
                 {
                     //报错，不用int索引[]
                     char msg[100] = {0};
-                    pNode target = get_syn_child(get_syn_brother(t, 2), 0);
+                    SyntaxNode *target = get_syn_child(get_syn_brother(t, 2), 0);
                     switch (target->node_type)
                     {
                     case ENUM_FLOAT:
@@ -1302,7 +920,7 @@ pSchema Exp(pNode node)
                 }
                 else
                 {
-                    pNode ref_id = t->next->next;
+                    SyntaxNode *ref_id = t->next->next;
                     pFieldList structfield = p1->data.structure.field;
                     while (structfield != NULL)
                     {
@@ -1428,14 +1046,14 @@ pSchema Exp(pNode node)
     }
 }
 
-void Args(pNode node, pItem funcInfo)
+void Args(SyntaxNode *node, pItem funcInfo)
 {
     if (node == NULL)
         return;
     // Args -> Exp COMMA Args
     //       | Exp
     // printTreeInfo(node, 0);
-    pNode temp = node;
+    SyntaxNode *temp = node;
     pFieldList arg = funcInfo->field->schema->data.function.argv;
     // printf("-----function atgs-------\n");
     // printFieldList(arg);
@@ -1467,7 +1085,7 @@ void Args(pNode node, pItem funcInfo)
             sprintf(msg + strlen(msg), ")\" is not applicable for arguments \"(");
 
             // 输出错误参数
-            for (pNode arg_node = node; arg_node != NULL; arg_node = get_syn_child(arg_node, 2))
+            for (SyntaxNode *arg_node = node; arg_node != NULL; arg_node = get_syn_child(arg_node, 2))
             {
                 switch (get_syn_child(get_syn_child(arg_node, 0), 0)->node_type)
                 {
