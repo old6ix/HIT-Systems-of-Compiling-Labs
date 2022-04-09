@@ -7,7 +7,7 @@ FLEX_CFLAGS = $(CFLAGS) -lfl
 
 src = main.c C--syntax.tab.c syntax_tree.c sema.c \
 	sematic/sema_util.c sematic/sema_error.c sematic/symbol_schema.c sematic/field_list.c \
-	sematic/table_item.c sematic/hash_table.c sematic/stack.c
+	sematic/table_item.c sematic/hash_table.c sematic/stack.c sematic/symbol_table.c
 
 # 日志输出函数
 define echo_info

@@ -6,33 +6,10 @@
 #include "sematic/symbol_schema.h"
 #include "sematic/field_list.h"
 #include "sematic/table_item.h"
-#include "sematic/hash_table.h"
-#include "sematic/stack.h"
-
-// 指针简写
-typedef struct table *pTable;
-
-typedef struct table
-{
-    pHash hash;
-    pStack stack;
-    int unNamedStructNum;
-} Table;
+#include "sematic/symbol_table.h"
 
 extern pTable table;
 
-// Table functions
-pTable initTable();
-void deleteTable(pTable table);
-pItem searchTableItem(pTable table, char *name);
-bool checkTableItemConflict(pTable table, pItem item);
-void addTableItem(pTable table, pItem item);
-void deleteTableItem(pTable table, pItem item);
-void clearCurDepthStackList(pTable table);
-// void addStructLayer(pTable table);
-// void minusStructLayer(pTable table);
-// bool isInStructLayer(pTable table);
-void printTable(pTable table);
 
 void traverseTree(SyntaxNode *node);
 

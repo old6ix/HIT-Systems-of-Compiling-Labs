@@ -1,9 +1,11 @@
 {
     "files.associations": {
+        "*.h": "c",
         "syntax_tree.h": "c",
         "type_traits": "cpp",
         "cmath": "cpp",
         "limits": "cpp",
-        "typeinfo": "c"
+        "typeinfo": "c",
+        "*.tcc": "c"
     }
 }
