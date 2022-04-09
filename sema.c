@@ -10,13 +10,12 @@
 
 pTable table;
 
-// Global function
 void traverseTree(SyntaxNode *node)
 {
     if (node == NULL)
         return;
 
-    if (!strcmp(node->name, "ExtDef"))
+    if (!strcmp(node->name, "ExtDef")) // 每当遇到ExtDef，说明有新符号
         ExtDef(node);
 
     for (size_t i = 0; i < node->child_cnt; i++)
@@ -25,7 +24,6 @@ void traverseTree(SyntaxNode *node)
     }
 }
 
-// Generate symbol table functions
 void ExtDef(SyntaxNode *node)
 {
     if (node == NULL)
@@ -36,26 +34,19 @@ void ExtDef(SyntaxNode *node)
     pSchema specifierType = Specifier(get_syn_child(node, 0));
     char *secondName = get_syn_child(node, 1)->name;
 
-    // printType(specifierType);
     // ExtDef -> Specifier ExtDecList SEMI
     if (!strcmp(secondName, "ExtDecList"))
     {
-        // TODO: process first situation
         ExtDecList(get_syn_child(node, 1), specifierType);
     }
     // ExtDef -> Specifier FunDec CompSt
     else if (!strcmp(secondName, "FunDec"))
     {
-        // TODO: process third situation
         FunDec(get_syn_child(node, 1), specifierType);
         CompSt(get_syn_child(node, 2), specifierType);
     }
     if (specifierType)
         deleteType(specifierType);
-    // printTable(table);
-    // Specifier SEMI
-    // this situation has no meaning
-    // or is struct define(have been processe inSpecifier())
 }
 
 void ExtDecList(SyntaxNode *node, pSchema specifier)
@@ -139,9 +130,9 @@ pSchema StructSpecifier(SyntaxNode *node)
         }
         else // 未命名结构体
         {
-            table->unNamedStructNum++;
+            table->unnamedStructCnt++;
             char structName[20] = {0};
-            sprintf(structName, "%d", table->unNamedStructNum);
+            sprintf(structName, "%d", table->unnamedStructCnt);
             setFieldListName(structItem->field, structName);
         }
         // 进入结构体。注意报错信息会有不同
@@ -241,9 +232,7 @@ void FunDec(SyntaxNode *node, pSchema returnType)
     }
 
     // FunDec -> ID LP RP don't need process
-
-    // check redefine
-    if (checkTableItemConflict(table, p))
+    if (checkTableItemConflict(table, p)) // 检查是否重复定义
     {
         char msg[100] = {0};
         sprintf(msg, "Redefined function \"%s\".", p->field->name);
@@ -375,8 +364,7 @@ void Stmt(SyntaxNode *node, pSchema returnType)
 
         // check return type
         if (!checkType(returnType, expType))
-            pError(TYPE_MISMATCH_RETURN, node->lineno,
-                   "Type mismatched for return.");
+            pError(TYPE_MISMATCH_RETURN, node->lineno, "Type mismatched for return.");
     }
 
     // Stmt -> IF LP Exp RP Stmt
@@ -472,8 +460,7 @@ void Dec(SyntaxNode *node, pSchema specifier, pItem structInfo)
                 {
                     //出现重定义，报错
                     char msg[100] = {0};
-                    sprintf(msg, "Redefined field \"%s\".",
-                            decitem->field->name);
+                    sprintf(msg, "Redefined field \"%s\".", decitem->field->name);
                     pError(REDEF_FEILD, node->lineno, msg);
                     deleteItem(decitem);
                     return;
@@ -505,8 +492,7 @@ void Dec(SyntaxNode *node, pSchema specifier, pItem structInfo)
             {
                 //出现冲突，报错
                 char msg[100] = {0};
-                sprintf(msg, "Redefined variable \"%s\".",
-                        decitem->field->name);
+                sprintf(msg, "Redefined variable \"%s\".", decitem->field->name);
                 pError(REDEF_VAR, node->lineno, msg);
                 deleteItem(decitem);
             }
@@ -522,8 +508,7 @@ void Dec(SyntaxNode *node, pSchema specifier, pItem structInfo)
         if (structInfo != NULL)
         {
             // 结构体内不能赋值，报错
-            pError(REDEF_FEILD, node->lineno,
-                   "Illegal initialize variable in struct.");
+            pError(REDEF_FEILD, node->lineno, "Illegal initialize variable in struct.");
         }
         else
         {
@@ -606,8 +591,7 @@ pSchema Exp(SyntaxNode *node)
                 //检查左值
                 SyntaxNode *tchild = get_syn_child(t, 0);
 
-                if (!strcmp(tchild->name, "FLOAT") ||
-                    !strcmp(tchild->name, "INT"))
+                if (!strcmp(tchild->name, "FLOAT") || !strcmp(tchild->name, "INT"))
                 {
                     //报错，左值
                     pError(LEFT_VAR_ASSIGN, t->lineno,
@@ -722,8 +706,7 @@ pSchema Exp(SyntaxNode *node)
             {
                 pSchema p1 = Exp(t);
                 pSchema returnType = NULL;
-                if (!p1 || p1->kind != STRUCTURE ||
-                    !p1->data.structure.structName)
+                if (!p1 || p1->kind != STRUCTURE || !p1->data.structure.structName)
                 {
                     pError(ILLEGAL_USE_DOT, t->lineno, "Illegal use of \".\".");
                 }
