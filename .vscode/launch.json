@@ -34,7 +34,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/C--parser-debug",
             "args": [
-                "${input:inputFile}"
+                "${input:inputFile}",
+                "output.ir"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -63,25 +64,8 @@
             "type": "pickString",
             "options": [
                 "custom-input",
-                "test-res/2.1.c",
-                "test-res/2.2.c",
-                "test-res/2.3.c",
-                "test-res/2.4.c",
-                "test-res/2.5.c",
-                "test-res/2.6.c",
-                "test-res/2.7.c",
-                "test-res/2.8.c",
-                "test-res/2.9.c",
-                "test-res/2.10.c",
-                "test-res/2.11.c",
-                "test-res/2.12.c",
-                "test-res/2.13.c",
-                "test-res/2.14.c",
-                "test-res/2.15.c",
-                "test-res/2.16.c",
-                "test-res/2.17.c",
-                "test-res/2.20.c",
-                "test-res/2.21.c",
+                "test-res/3.1.c",
+                "test-res/3.2.c",
             ],
             "default": "custom-input"
         }
