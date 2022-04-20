@@ -14,6 +14,21 @@ pTable initTable()
     table->hash = newHash();
     table->stack = newStack();
     table->unnamedStructCnt = 0;
+
+    // 添加read和write函数
+    pItem readFun = newItem(
+        0, newFieldList(newString("read"),
+                        newType(FUNCTION, 0, NULL, newType(BASIC, INT_TYPE))));
+
+    pItem writeFun = newItem(
+        0, newFieldList(newString("write"),
+                        newType(FUNCTION, 1,
+                                newFieldList("arg1", newType(BASIC, INT_TYPE)),
+                                newType(BASIC, INT_TYPE))));
+
+    addTableItem(table, readFun);
+    addTableItem(table, writeFun);
+
     return table;
 };
 
@@ -68,7 +83,7 @@ void addTableItem(pTable table, pItem item)
     unsigned hashCode = getHashCode(item->field->name);
     pHash hash = table->hash;
     pStack stack = table->stack;
-    
+
     item->nextSymbol = getCurDepthStackHead(stack);
     setCurDepthStackHead(stack, item);
 

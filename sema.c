@@ -322,7 +322,8 @@ void CompSt(SyntaxNode *node, pSchema returnType)
         StmtList(temp, returnType);
     }
 
-    clearCurDepthStackList(table);
+    // 为了中间代码生成
+    // clearCurDepthStackList(table);
 }
 
 void StmtList(SyntaxNode *node, pSchema returnType)
@@ -482,7 +483,7 @@ void Dec(SyntaxNode *node, pSchema specifier, pItem structInfo)
             {
                 last->next = copyFieldList(decitem->field);
             }
-            deleteItem(decitem);
+            addTableItem(table, decitem);
         }
         else
         {

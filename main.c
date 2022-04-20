@@ -1,5 +1,6 @@
 #include "syntax_tree.h"
 #include "sema.h"
+#include "inter.h"
 #include "C--syntax.tab.h"
 
 extern SyntaxNode *root;
@@ -28,6 +29,12 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    FILE* fw = fopen(argv[2], "wt+");
+    if (!fw) {
+        perror(argv[2]);
+        return 1;
+    }
+
     yyrestart(f);
 
 #ifdef DEBUG
@@ -43,9 +50,21 @@ int main(int argc, char **argv)
     {
         table = initTable();
         traverseTree(root);
+        
+        interCodeList = newInterCodeList();
+        genInterCodes(root);
+        if (!interError) {
+            printInterCode(fw, interCodeList);
+        }
+        
         deleteTable(table);
     }
 
+    fclose(f);
+    f = NULL;
+    fclose(fw);
+    fw = NULL;
+    
     free_syn_tree(root);
     return 0;
 }

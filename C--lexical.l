@@ -129,6 +129,7 @@ ML_COMMENT \/\*([^*]|(\*+[^*/]))*\*+\/
 {RELOP} {
     printf_lexical_debug("RELOP");
     CREATE_TOKEN_NODE("RELOP", yylloc.first_line, ENUM_OTHER)
+    strcpy(yylval.node->strval, yytext);
     return RELOP;
 }
 
