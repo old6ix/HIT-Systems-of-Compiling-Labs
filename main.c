@@ -25,13 +25,13 @@ int main(int argc, char **argv)
     FILE *f = fopen(argv[1], "r");
     if (!f)
     {
-        perror(argv[1]);
+        fprintf(stderr, "Failed to open input file: %s\n", argv[1]);
         return 1;
     }
 
     FILE* fw = fopen(argv[2], "wt+");
     if (!fw) {
-        perror(argv[2]);
+        fprintf(stderr, "Failed to open output file: %s\n", argv[2]);
         return 1;
     }
 
